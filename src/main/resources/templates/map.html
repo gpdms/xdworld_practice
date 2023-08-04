@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>XDWorldEM</title>
+	<meta charset="UTF-8">
+	<!-- <link rel="stylesheet" href="style.css"> -->
+	<style>
+		#map {
+			position: absolute;
+			width: calc(100%);
+			height: calc(100%);
+			left: 0px;
+			top: 0px;
+		}
+		#pop-up {
+			display: block;
+		    position: absolute;
+		    left: -5px;
+		    z-index: 9;
+		    background-color: #FFFFFF;
+		    padding: 10px 10px 10px 15px;
+		    border-radius: 5px;
+		    font-size: 13px;
+		    font-weight: bold;
+		    opacity: 0.9;
+		    width: 300px;
+ 			height: 300px;  
+		}			
+		#DV_ObjectListWrap{
+			display: block;
+			width: 290px;
+			height: 100px;
+			border: 1px solid black;
+			margin-bottom: 5px;
+			overflow: auto;
+		}
+		#UL_ObjectList{
+			list-style-type: none;
+		    padding-left: 20px;
+		}
+		#poi-properties,
+		#polygon-properties {
+			display: none; 
+			position: absolute;
+			left: -5px;
+			top: 330px;
+			z-index: 9;
+			background-color: #FFFFFF;
+			padding: 10px 10px 10px 15px;
+			border-radius: 5px;
+			font-size: 13px;
+			font-weight: bold;
+			opacity: 0.9;
+			width: 350px;
+			height: 350px;
+			overflow: auto;
+		}
+		.UL_ObjectSubProperties{
+			list-style-type: none;
+		    margin: 0px;
+		    padding: 0px;
+		}
+		#search-wrap{
+		    display: block;
+		    position: absolute;
+		    right: 5px;
+		    z-index: 9;
+		    background-color: #FFFFFF;
+   		    width: 300px;
+		    
+    
+		}
+	</style>
+	
+</head>
+
+<body>
+		
+	<div id="map"></div>
+	<div id="pop-up" onmouseover="Module.XDIsMouseOverDiv(true);" onmouseout="Module.XDIsMouseOverDiv(false);">
+		<button onclick="createPoiPopup()">POI</button>
+		<button onclick="createLinePopup()">LINE</button>
+		<button onclick="createPolyPopup()">POLYGON</button>
+		<br/><br/>
+		
+<!-- poi -->
+		<div id="poi-wrap">
+		장소명 입력 후, 생성버튼을 클릭하세요.
+			<input type="text" id="TX_Text" placeholder="장소명을 입력하세요.">
+			<button onclick="Module.XDSetMouseState(21);">생성</button><br/><br/>
+			<button onclick="removeAllPoi()">전체삭제</button><br/>
+			[Poi Object List]
+			<div id="DV_ObjectListWrap">
+				<ul id="UL_ObjectList"></ul>
+			</div>
+			Poi Object Count
+			<input type="text" id="TX_ObjectCount" class="TX_Option" value="0"><br/>
+		</div><!-- poi-wrap -->
+		
+		
+		<!-- PolyLine -->
+		<div id="line-wrap" style="display:none;">
+			[Object Property]<br/>
+			<ul>
+				<li>
+					Line Color
+					(A <input type="text" id="lineColorA" value="255" style="width:25px">|
+					R <input type="text" id="lineColorR" value="255" style="width:25px">| 
+					G <input type="text" id="lineColorG" value="255" style="width:25px">| 
+					B <input type="text" id="lineColorB" value="255" style="width:25px">)<br/>
+				</li>
+				<li>
+					Line Width <input type="text" id="inputLineWidth" value="5.0" style="width:25px">
+				</li>
+			</ul>
+		
+			점을 찍은 후 버튼을 클릭하세요. <br/>
+			<input type="button" value="Create PolyLine" onclick="createPolyLine();"><br/><br/>
+			<button onclick="removeAllPolyLine()">전체삭제</button><br/>
+		</div>
+		
+		
+		<!-- Polygon -->
+		<div id="poly-wrap" style="display:none;">
+			3개 이상의 점을 찍은 후 버튼을 클릭하세요. <br/>
+			<input type="button" value="Create Polygon" onclick="createPolygon();"><br/><br/>
+			<button onclick="removeAllPolygon()">전체삭제</button><br/>
+		</div>
+	
+	</div><!-- pop-up -->
+	
+	<!-- poi상세정보 -->
+	<div id="poi-properties" onmouseover="Module.XDIsMouseOverDiv(true);" onmouseout="Module.XDIsMouseOverDiv(false);">
+		[]Object Properties]<br/>
+			<table>
+				<tr>
+					<th>Option</th>
+					<th colspan='2'>Value</th>
+				</tr>
+				<tr>
+					<td>Key</td>
+					<td colspan="2"><input type="text" id="TX_ObjectKey" style="width:218px;text-align:center;"></td>
+				</tr>
+				<tr>
+					<td>Name</td>
+					<td><input type="text" id="TX_ObjectName" style="width:159px;text-align:center;"></td>
+					<td><input type="button" value="Set" style="width:55px;" onClick="setObjectProperties('name')"></td>
+				</tr>
+				<tr>
+					<td>Visible</td>
+					<td><input type="text" id="TX_ObjectVisible" style="width:159px;text-align:center;"></td>
+					<td><input type="button" value="Toggle" style="width:55px;" onClick="setObjectProperties('visible')"></td>
+				</tr>
+				<tr>
+					<td>Description</td>
+					<td><input type="text" id="TX_ObjectDescription" style="width:159px;text-align:center;"></td>
+					<td><input type="button" value="Set" style="width:55px;" onClick="setObjectProperties('description')"></td>
+				</tr>
+				<tr>
+					<td>Type</td>
+					<td colspan='2'><input type="text" id="TX_ObjectType" style="width:218px;text-align:center;" readonly></td>
+				</tr>
+				<tr>
+					<td>Center</td>
+					<td colspan='2'>
+						<ul class="UL_ObjectSubProperties">
+							<li>X <input type="text" id="TX_ObjectCenterX" style="width:204px;text-align:center;" readonly></li>
+							<li>Y <input type="text" id="TX_ObjectCenterY" style="width:205px;text-align:center;" readonly></li>
+							<li>Z <input type="text" id="TX_ObjectCenterZ" style="width:204px;text-align:center;" readonly></li>
+						</ul>
+					</td>
+				</tr>
+				<tr>
+					<td>Visible<br/>Range</td>
+					<td>
+						<ul class="UL_ObjectSubProperties">
+							<li>Set <input type="text" id="TX_RangeValueActivate" style="width:134px;text-align:center;" readonly></li>
+							<li>Min <input type="text" id="TX_RangeValueMin" style="width:129px;text-align:center;"></li>
+							<li>Max <input type="text" id="TX_RangeValueMax" style="width:127px;text-align:center;"></li>
+						</ul>
+					</td>
+					<td><input type="button" value="Set" style="width:55px;height:63px;" onClick="setObjectProperties('visibleRange')"></td>
+				</tr>
+				<tr>
+					<td>Font Name</td>
+					<td colspan='2'><input type="text" id="TX_ObjectFontName" style="width:218px;text-align:center;" readonly></td>
+				</tr>
+				<tr>
+					<td>Font Size</td>
+					<td colspan='2'><input type="text" id="TX_ObjectFontSize" style="width:218px;text-align:center;" readonly></td>
+				</tr>
+				<tr>
+					<td>Font Weight</td>
+					<td colspan='2'><input type="text" id="TX_ObjectFontWeight" style="width:218px;text-align:center;" readonly></td>
+				</tr>
+				<tr>
+					<th>Font Color</th>
+					<th colspan='2'>
+						ARGB(
+						<input type="text" class="TX_Color" id="TX_ObjectFontColorA" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontColorR" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontColorG" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontColorB" readonly>)
+					</th>
+				</tr>
+				<tr>
+					<th>Font OutLine Color
+					</th>
+					<th colspan='2'>
+						ARGB(
+						<input type="text" class="TX_Color" id="TX_ObjectFontLineColorA" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontLineColorR" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontLineColorG" readonly>,
+						<input type="text" class="TX_Color" id="TX_ObjectFontLineColorB" readonly>)
+					</th>
+				</tr>
+			</table>
+		</div>
+	
+	<!-- polygon 상세정보 -->
+	<div id="polygon-properties" onmouseover="Module.XDIsMouseOverDiv(true);" onmouseout="Module.XDIsMouseOverDiv(false);">
+		<table>
+				<tr>
+					<td>Key</td>
+					<td colspan="2"><input type="text" id="PG_ObjectKey" style="width:218px;text-align:center;"></td>
+				</tr>
+				<tr>
+					<td>Name</td>
+					<td><input type="text" id="PG_ObjectName" style="width:159px;text-align:center;"></td>
+				</tr>
+		</table>
+	
+	</div>
+	
+	<!-- 검색 -->
+	<div id="search-wrap">
+		<input type="search" id="searchKeyword" value="" placeholder="주소를 입력해주세요." aria-label="Recipient's username" aria-describedby="button-addon2">
+		<label for="searchKeyword"></label>
+		<button type="button" onclick="searchAddress();">검색</button>
+		
+		<div >
+			<table id="searched-tb">
+				<tr>
+					<th>id</th>
+					<th>title</th>
+				</tr>
+				
+			
+		</table>
+		</div>
+		
+	</div>
+	
+
+	<!-- jquery CDN -->
+	<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+	<script>
+		var initScript = document.createElement('script');
+		initScript.src = "./js/init.js";
+		document.body.appendChild(initScript);
+		
+		function searchAddress(){
+			var keyword = document.getElementById("searchKeyword").value;
+			
+
+//			var params = {
+//						 service : "search"
+//						,request : "search"
+//						,version : "2.0"
+//						,crs : "EPSG:4326"
+//						,size : 10
+//						,page : 1
+//						,query : $.trim($("#searchKeyword").val())
+//						,type : "place"
+//						,format : "json"
+//						,errorformat : "json"
+//						,key : "DD524C3D-6343-312F-941A-000185A9D92B"
+//					}
+			
+// 			// data으로 Parameter 전송
+// 			var Parms  = '?mode=login';
+// 			Parms += '&code=' + code;
+// 			Parms += '&uid=' + uid;
+// 			Parms += '&pass=' + pass;
+			
+	 		$.ajax({
+			url: "/search",
+			type: "POST",
+			data: {keyword: keyword},
+			success: function(data, status, xhr){
+				console.log("성공!");
+				//console.log(data);
+				
+				var result = JSON.parse(data);
+				console.log(result.response);
+				if(result.response.)
+				
+				var table = document.getElementById("searched-tb");
+				var newRow = table.insertRow();
+				var newCell1 = newRow.insertCell(0);
+				var newCell2 = newRow.insertCell(1);
+
+				newCell1.innerText = "id1";
+				newCell2.innerText = "title1";
+				
+			},
+			error: function(xhr, status, error){
+				console.log("실패!!!");
+			}
+		})
+		
+		
+		
+		
+		
+		}
+
+ 	</script>
+	
+</body>
+</html>
