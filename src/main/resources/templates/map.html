@@ -293,7 +293,14 @@
 				
 				var result = JSON.parse(data);
 				console.log(result.response);
-				if(result.response.)
+				
+				var length = result.response.result.itmes.length;
+				console.log("length:"+length);
+				
+				
+				if(result.response.result.items){
+					
+				}
 				
 				var table = document.getElementById("searched-tb");
 				var newRow = table.insertRow();
