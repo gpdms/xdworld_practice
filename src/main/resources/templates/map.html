@@ -3,73 +3,9 @@
 <head>
 	<title>XDWorldEM</title>
 	<meta charset="UTF-8">
-	<!-- <link rel="stylesheet" href="style.css"> -->
+	<link rel="stylesheet" href="css/style.css"> 
 	<style>
-		#map {
-			position: absolute;
-			width: calc(100%);
-			height: calc(100%);
-			left: 0px;
-			top: 0px;
-		}
-		#pop-up {
-			display: block;
-		    position: absolute;
-		    left: -5px;
-		    z-index: 9;
-		    background-color: #FFFFFF;
-		    padding: 10px 10px 10px 15px;
-		    border-radius: 5px;
-		    font-size: 13px;
-		    font-weight: bold;
-		    opacity: 0.9;
-		    width: 300px;
- 			height: 300px;  
-		}			
-		#DV_ObjectListWrap{
-			display: block;
-			width: 290px;
-			height: 100px;
-			border: 1px solid black;
-			margin-bottom: 5px;
-			overflow: auto;
-		}
-		#UL_ObjectList{
-			list-style-type: none;
-		    padding-left: 20px;
-		}
-		#poi-properties,
-		#polygon-properties {
-			display: none; 
-			position: absolute;
-			left: -5px;
-			top: 330px;
-			z-index: 9;
-			background-color: #FFFFFF;
-			padding: 10px 10px 10px 15px;
-			border-radius: 5px;
-			font-size: 13px;
-			font-weight: bold;
-			opacity: 0.9;
-			width: 350px;
-			height: 350px;
-			overflow: auto;
-		}
-		.UL_ObjectSubProperties{
-			list-style-type: none;
-		    margin: 0px;
-		    padding: 0px;
-		}
-		#search-wrap{
-		    display: block;
-		    position: absolute;
-		    right: 5px;
-		    z-index: 9;
-		    background-color: #FFFFFF;
-   		    width: 300px;
-		    
-    
-		}
+		
 	</style>
 	
 </head>
@@ -236,21 +172,47 @@
 	<div id="search-wrap">
 		<input type="search" id="searchKeyword" value="" placeholder="주소를 입력해주세요." aria-label="Recipient's username" aria-describedby="button-addon2">
 		<label for="searchKeyword"></label>
-		<button type="button" onclick="searchAddress();">검색</button>
+		<button type="button" onclick="searchAddress(1);">검색</button>
 		
 		<div >
-			<table id="searched-tb">
-				<tr>
-					<th>id</th>
-					<th>title</th>
-				</tr>
-				
-			
-		</table>
+			<table id="searched_tb"></table>
+			<ul id="pagingul"></ul>
 		</div>
-		
-	</div>
+	</div><!--search-wrap-->
 	
+	<div id="searched_properties">
+		<table>
+			<tr>
+				<th>id</th>
+				<td id="s_id"></td>
+			</tr>
+			<tr>
+				<th>장소명</th>
+				<td id="s_title"></td>
+			</tr>
+			<tr>
+				<th>카테고리</th>
+				<td id="s_category"></td>
+			</tr>
+			<tr>
+				<th>도로명주소</th>
+				<td id="s_addr_road"></td>
+			</tr>
+			<tr>
+				<th>지번주소</th>
+				<td id="s_addr_lot"></td>
+			</tr>
+			<tr>
+				<th>경도</th>
+				<td id="s_x"></td>
+			</tr>
+			<tr>
+				<th>위도</th>
+				<td id="s_y"></td>
+			</tr>
+		</table>
+		<button type="button" onclick="$('#searched_properties').hide()">닫기</button>
+	</div>
 
 	<!-- jquery CDN -->
 	<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
@@ -259,11 +221,210 @@
 		initScript.src = "./js/init.js";
 		document.body.appendChild(initScript);
 		
-		function searchAddress(){
+		function searchAddress(currentPage){
 			var keyword = document.getElementById("searchKeyword").value;
 			
+	 		$.ajax({
+			url: "/search",
+			type: "POST",
+			data: {keyword: keyword, currentPage: currentPage},
+			success: function(data, status, xhr){
+				console.log("데이터 가져오기 성공!");
+				
+				//리스트 비우기
+				$("#searched_tb").empty();
 
-//			var params = {
+				var rs = JSON.parse(data);
+				console.log(rs.response);
+				
+				let totalData = rs.response.record.total;
+				console.log("totalData:"+totalData);
+				paging(totalData, 1);
+				
+				let trHtml = '';
+				
+				if(rs.response.status == 'OK'){
+					//tr에 id부여하고 data-title이런식으로 데이터넣기. poi객체클릭시 $(#id)로 불러오기
+					trHtml += `<tr>
+									<th>id</th>
+									<th>title</th>
+									<th>category</th>
+								</tr>`;
+									
+					for(let i=0; i<10; i++){
+						console.log(i+"id:"+rs.response.result.items[i].id);
+				
+						let id = rs.response.result.items[i].id;
+						let title = rs.response.result.items[i].title;
+						let category = rs.response.result.items[i].category;
+						let addr_road = rs.response.result.items[i].address.road;
+						let addr_lot = rs.response.result.items[i].address.parcel;
+						let x = Number(rs.response.result.items[i].point.x);
+						let y = Number(rs.response.result.items[i].point.y);
+						
+						trHtml += '<tr>';
+						trHtml += '<td>'+id+'</td>';
+						trHtml += `<td><a href='javascript:void(0);' onclick="selectOneAddr('${id}','${title}','${category}','${addr_road}','${addr_lot}',${x},${y})";> ${title} <a/></td>`;
+						trHtml += `<td> ${category} </td>`;
+						trHtml += '</tr>'
+						
+						createSearchedPoi(id, x, y, title);
+					}//for문
+					
+					$('#searched_tb').append(trHtml);
+					selectSearchedPoi();
+					
+				} else{
+					trHtml = '조회된 정보가 없습니다.';
+					$('#searched_tb').append(trHtml);
+					
+				}//if else문//
+			},//success//
+			error: function(xhr, status, error){
+				console.log("데이터 가져오기 실패!!!");
+			}
+		})//ajax//
+		}//searchAddress()//
+		
+		
+		function paging(totalData, currentPage){
+			let dataPerPage = 10; //한 페이지에 나타낼 글 수
+			let pageCount = 10; //페이징에 나타낼 페이지 수
+			let globalCurrentPage=1; //현재 페이지
+			
+			totalPage = Math.ceil(totalData / dataPerPage); //총 페이지 수
+			
+			if(totalPage<pageCount){
+    		pageCount=totalPage;
+  			}
+  			
+  			let pageGroup = Math.ceil(currentPage / pageCount); // 페이지 그룹
+		  	let last = pageGroup * pageCount; //화면에 보여질 마지막 페이지 번호
+		  
+		  	if (last > totalPage) {
+		    last = totalPage;
+		  	}
+		  	
+		  	let first = last - (pageCount - 1); //화면에 보여질 첫번째 페이지 번호
+		  
+		  	let next = last + 1;
+		  	let prev = first - 1;
+		
+		  	let pageHtml = "";
+		
+		  	if (prev > 0) {
+		    	pageHtml += "<li><a href='#' id='prev'> 이전 </a></li>";
+		  	}
+		
+			 //페이징 번호 표시 
+			  for (var i = first; i <= last; i++) {
+			    if (currentPage == i) {
+			      pageHtml +=
+			        "<li class='on'><a href='#' id='" + i + "'>" + i + "</a></li>";
+			    } else {
+			      pageHtml += "<li><a href='#' id='" + i + "'>" + i + "</a></li>";
+			    }
+			  }
+		
+			  if (last < totalPage) {
+			    pageHtml += "<li><a href='#' id='next'> 다음 </a></li>";
+			  }
+			
+			  $("#pagingul").html(pageHtml);
+			  let displayCount = "";
+			  displayCount = "현재 1 - " + totalPage + " 페이지 / " + totalData + "건";
+			  $("#displayCount").text(displayCount);
+		
+		
+			  //페이징 번호 클릭 이벤트 
+			  $("#pagingul li a").click(function () {
+				  
+			    let $id = $(this).attr("id");
+			    selectedPage = $(this).text();
+			    searchAddress(selectedPage); 
+			
+			    if ($id == "next") selectedPage = next;
+			    if ($id == "prev") selectedPage = prev;
+			    
+			    //전역변수에 선택한 페이지 번호를 담는다...
+			    globalCurrentPage = selectedPage;
+			    //페이징 표시 재호출
+			    //paging(totalData,selectedPage);
+			    //글 목록 표시 재호출
+			    //displayData(selectedPage, dataPerPage);
+			  });
+		  	
+		  	
+		  	
+		}//paging//
+		
+		
+		//리스트 클릭 시 이동, 상세정보
+		function selectOneAddr(id,title,category,road,lot,x,y){
+			 // 카메라 위치 설정
+			Module.getViewCamera().setLocation(new Module.JSVector3D(x, y, 500.0)); //(Longitude경도, Latitude위도, Altitude고도)
+			//카메라 화각 설정
+			Module.getViewCamera().setFov(90);
+			
+			$('#s_id').text(id);
+			$('#s_title').html(title);
+			$('#s_category').text(category);
+			$('#s_addr_road').text(road);
+			$('#s_addr_lot').text(lot);
+			$('#s_x').text(x);
+			$('#s_y').text(y);
+			
+			$('#searched_properties').show();
+		}
+
+		
+		//검색한 point 객체 추가
+		function createSearchedPoi(id, x, y, title){
+			
+			// POI 오브젝트를 추가 할 레이어 생성
+			var layerList = new Module.JSLayerList(true);
+			var layer = layerList.createLayer("SEARCHED_POI", Module.ELT_3DPOINT);
+			
+			// Text & image POI
+			var img = new Image();
+			img.onload = function() {
+		
+				// 이미지 로드 후 캔버스에 그리기
+				var canvas = document.createElement('canvas');
+				var ctx = canvas.getContext('2d');
+				canvas.width = img.width;
+				canvas.height = img.height;
+				ctx.drawImage(img, 0, 0);
+				
+				// 이미지 POI 생성
+				var poi_with_text_n_image = Module.createPoint(id);
+				poi_with_text_n_image.setPosition(new Module.JSVector3D(x, y, 10.0));//딱붙는 함수 찾아내기
+				poi_with_text_n_image.setImage(ctx.getImageData(0, 0, this.width, this.height).data, this.width, this.height);
+				
+				// 텍스트 설정
+				poi_with_text_n_image.setText(title);
+				poi_with_text_n_image.setFontStyle("Sans-serif", 12, 700, new Module.JSColor(0, 207, 255), new Module.JSColor(0, 0, 0)); //(name, size, weight, fill_color, outline_color) 
+				
+				this.layer.addObject(poi_with_text_n_image, 0);
+		    };
+		    img.layer = layer;
+		    img.src = "./data/poisearch.png"
+			
+		}//createSearchedPoi
+		
+		function selectSearchedPoi(){
+			//마우스모드 포인트 선택 모드로 변경
+			Module.XDSetMouseState(6);
+			//poi 클릭시 이벤트
+			Module.canvas.addEventListener("Fire_EventSelectedObject", function(e){
+			console.log("객체 클릭!this.id:"+this.id);
+			});
+		}//selectSearchedPoi()
+		
+		
+		
+		
+		//			var params = {
 //						 service : "search"
 //						,request : "search"
 //						,version : "2.0"
@@ -282,45 +443,6 @@
 // 			Parms += '&code=' + code;
 // 			Parms += '&uid=' + uid;
 // 			Parms += '&pass=' + pass;
-			
-	 		$.ajax({
-			url: "/search",
-			type: "POST",
-			data: {keyword: keyword},
-			success: function(data, status, xhr){
-				console.log("성공!");
-				//console.log(data);
-				
-				var result = JSON.parse(data);
-				console.log(result.response);
-				
-				var length = result.response.result.itmes.length;
-				console.log("length:"+length);
-				
-				
-				if(result.response.result.items){
-					
-				}
-				
-				var table = document.getElementById("searched-tb");
-				var newRow = table.insertRow();
-				var newCell1 = newRow.insertCell(0);
-				var newCell2 = newRow.insertCell(1);
-
-				newCell1.innerText = "id1";
-				newCell2.innerText = "title1";
-				
-			},
-			error: function(xhr, status, error){
-				console.log("실패!!!");
-			}
-		})
-		
-		
-		
-		
-		
-		}
 
  	</script>
 	

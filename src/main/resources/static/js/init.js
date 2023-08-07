@@ -185,7 +185,7 @@ function createPointObject() {
 	initObjectList();
 	
 	//마우스상태 지도 이동 상태로 변경
-	Module.XDSetMouseState(2);
+	Module.XDSetMouseState(1);
 	
 	//input 텍스트 지우기
 	document.getElementById('TX_Text').value = "";

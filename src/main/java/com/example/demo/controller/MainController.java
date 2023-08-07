@@ -29,7 +29,7 @@ public class MainController {
 	
 	@ResponseBody
 	@PostMapping("/search")
-	public String search(@RequestParam String keyword) {
+	public String search(@RequestParam String keyword, @RequestParam String currentPage) {
 		log.info("컨트롤러 도착한 keyword:"+keyword);
 		
 		StringBuffer sbuf = new StringBuffer();
@@ -41,7 +41,8 @@ public class MainController {
 //			System.setProperty("http.proxyPort", "8080");
 			
 			String vworldurl = "https://api.vworld.kr/req/search?service=search&request=search&version=2.0"
-					+ "&size=10&page=1"
+					+ "&size=10"
+					+ "&page=" + currentPage
 					+ "&query=" + keyword
 					+ "&type=place"
 					+ "&format=json"
